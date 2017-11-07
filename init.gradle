@@ -1,0 +1,47 @@
+//修改project buildDir to R:\GradleBuildRoot\ProjectName\HashCode\build
+//reference:
+//https://stackoverflow.com/questions/23340946/gradle-global-build-directory
+def ConfigProjectBuildDir(project, rootProject) {
+
+	//获取environment variable
+	//https://stackoverflow.com/questions/9854176/in-gradle-is-there-a-better-way-to-get-environment-variables
+    def buildRoot = System.env.GradleBuildRoot
+	
+	//如果没有指定environment variable，使用默认
+    if (!buildRoot?.trim()) {
+        buildRoot = ${rootProject.projectDir}
+    }
+    else {
+	
+		//获取root project name
+        def rprojectName = rootProject.name.toLowerCase();
+		
+		//如果是src，则获取上一层目录名
+        if( rprojectName == "src")
+            rprojectName = rootProject.projectDir.parentFile.name
+        else
+            rprojectName = rootProject.name;
+			
+		//e.g. R:\GradleBuildRoot\RelaxFinger\-123123
+        buildRoot = buildRoot + "/" + rprojectName + "/" + rootProject.projectDir.hashCode()
+    }
+
+    //如果是rootProject，则直接使用build，这样在task clean(type: Delete) { delete rootProject.buildDir }时可以直接删除
+	if(project == rootProject)
+		project.buildDir = buildRoot + "/build"
+	else
+		project.buildDir = buildRoot + "/build/p/${project.name}"
+	
+	//log
+    println project.buildDir
+}
+
+//reference:https://stackoverflow.com/questions/19253146/function-from-init-gradle-in-build-script
+//https://stackoverflow.com/questions/27777591/how-to-define-and-call-custom-methods-in-build-gradle
+//定义project扩展方法
+//在solution build.gradle中 allprojects { ConfigBuildDir() } 可以修改BuildDir to R:\GradleBuildRoot\ProjectName\HashCode\build
+gradle.allprojects{
+  ext.ConfigBuildDir = {
+   ConfigProjectBuildDir(project, rootProject)
+   }    
+}
